@@ -1,209 +1,123 @@
-# **Fundamental News Impact on SP500 Price Movements**
+# **📈 Fundamental News Impact on SP500 Price Movements**
 
 ## **📌 Project Overview**
 
-This project analyzes the relationship between major **economic news releases** and **SP500 CFD price movements**. By understanding how news impacts price fluctuations, traders and analysts can refine trading strategies and risk management.
+This project analyzes the relationship between major **economic news releases** and **S&P 500 CFD price movements**. By understanding how macroeconomic context and news affects short-term price behavior, we can study market reactions, design better trading systems, and explore predictive modeling.
 
-### **📊 Datasets Used**
-
-- **`tick_data`**: Tick-level price movements of SP500.
-- **`news_releases`**: Economic news events with timestamps and impact levels.
-
-### **🔍 Objective**
-
-- Identify **how major economic news releases influence SP500 prices**.
-- Process tick-level and news data for **cleaner, structured analysis**.
-- **Standardize and optimize datetime formats** to enable efficient joins and queries.
+It combines **tick-level financial data** with **macroeconomic indicators** to create a rich, structured dataset ready for analysis, visualization, and machine learning.
 
 ---
 
-## **📂 1. Examining and Understanding the CSV Data**
+## **🔍 Objectives**
 
-Before importing large datasets, we used **Jupyter Notebook** to examine the CSV files, check data structure, and determine the correct delimiters.
-
-### **📌 1.1 Previewing the First 10 Rows**
-
-To ensure we understood the dataset structure, we first examined the top 10 rows:
-
-```python
-import pandas as pd
-
-file_path = "C:/Users/Filip/Desktop/TickDataManager/Exported Tick Data/US500/USA_500_Index_GMT+2_US-DST_2_9_2025.csv"
-
-# Read the first 10 lines to inspect structure
-df = pd.read_csv(file_path, nrows=10)
-
-# Display column names and preview data
-print(df.head())
-print(df.dtypes)
-```
-
-### **📌 1.2 Checking Last 10 Rows**
-
-To confirm the data consistency throughout the file, we also examined the last 10 rows:
-
-```python
-# Efficient way to read the last 10 rows of a large CSV file
-chunk_size = 100000  # Adjust based on file size
-last_rows = pd.DataFrame()
-
-for chunk in pd.read_csv(file_path, chunksize=chunk_size):
-    last_rows = chunk.tail(10)  # Keep only the last 10 rows of the last chunk
-
-print(last_rows)
-```
-
-### **📌 1.3 Detecting Delimiters**
-
-To correctly import the CSV into SQLite, we checked which separator was being used:
-
-```python
-df = pd.read_csv(file_path, sep=None, engine='python')  # Auto-detect delimiter
-print(df.head())
-```
-
-After this inspection, we determined that the **comma (`,`)** was the correct delimiter, and we used it in the SQLite import process.
+- Analyze **SP500 behavior before and after major economic news events**
+- Join **high-frequency price data** with macro context and news metadata
+- Label and track **macro regimes** (e.g., recession, high inflation)
+- Build a foundation for **strategy development and modeling**
 
 ---
 
-## **📂 2. Database Schema**
+## **📊 Datasets Used**
 
-### **`tick_data` Table**
-
-```sql
-CREATE TABLE tick_data (
-    datetime DATETIME,  -- Tick timestamp
-    bid REAL,           -- Bid price
-    ask REAL            -- Ask price
-);
-```
-
-### **`news_releases` Table**
-
-```sql
-CREATE TABLE news_releases (
-    datetime DATETIME,  -- News release timestamp
-    currency TEXT,      -- Currency affected
-    event TEXT,         -- Event name
-    impact TEXT,        -- Impact level (High, Medium, Low)
-    actual REAL,        -- Actual reported value
-    actual_unit TEXT,   -- Unit of actual value
-    forecast REAL,      -- Forecasted value
-    forecast_unit TEXT, -- Unit of forecast value
-    previous REAL,      -- Previous reported value
-    previous_unit TEXT, -- Unit of previous value
-    previous_revised TEXT -- Any revision to previous value
-);
-```
+| Dataset | Description |
+|--------|-------------|
+| `tick_data` | Tick-level SP500 CFD prices (bid/ask) |
+| `news_releases` | Economic event data (e.g., NFP, CPI), with timestamps and values |
+| `macro_indicators` | Raw macroeconomic data (GDP, CPI, Unemployment, etc.) |
+| `market_regime` | Labeled daily macro regimes (growth, policy, sentiment, etc.) |
+| `daily_macro_summary` | One-row-per-day macro snapshot (GDP, CPI, yield spread, etc.) |
+| `yield_curve` | 10Y vs. 2Y Treasury yields and spread |
+| `vix_index` | Daily VIX index values from Yahoo Finance |
 
 ---
 
-## **🧹 3. Data Cleaning & Preprocessing**
+## **⚙️ Technologies Used**
 
-### **📌 3.1 Removing Excessive Dates**
-
-```sql
--- Remove old news before 2020-01-02
-DELETE FROM news_releases WHERE datetime < '2020-01-02';
-
--- Remove future dates beyond 2024-12-27
-DELETE FROM news_releases WHERE datetime > '2024-12-27';
-
--- Remove rows where datetime is NULL
-DELETE FROM news_releases WHERE datetime IS NULL;
-```
-
-### **📌 3.2 Converting `news_releases` Timezone (UTC → GMT+2)**
-
-```sql
-UPDATE news_releases
-SET datetime = datetime(datetime, '+2 hours');
-```
-
-### **📌 3.3 Formatting `news_releases.datetime` to Match `tick_data`**
-
-```sql
-UPDATE news_releases
-SET datetime = strftime('%Y-%m-%d %H:%M:%f', datetime);
-```
-
-### **📌 3.4 Checking News Data After Cleaning**
-
-```sql
-SELECT * FROM news_releases 
-WHERE impact = 'High Impact Expected' AND currency = 'USD'
-LIMIT 50;
-```
+- **SQLite** for efficient local database storage
+- **Pandas, FRED API, yFinance** for data collection and transformation
+- **Jupyter Notebook** for analysis, querying, and exploratory work
+- **SQL** for joins, filtering, and preprocessing
 
 ---
 
-## **🔄 4. Tick Data Formatting & Cleanup**
+## **🧱 Project Structure & Pipeline**
 
-### **📌 4.1 Reformatting `tick_data.datetime` (Ensuring Correct Format)**
-
-```sql
-UPDATE tick_data
-SET datetime = 
-    SUBSTR(datetime, 1, 4) || '-' || 
-    SUBSTR(datetime, 6, 2) || '-' || 
-    SUBSTR(datetime, 9, 2) || ' ' || 
-    SUBSTR(datetime, 12);
-```
-
-### **📌 4.2 Removing Tick Data Beyond `news_releases` Time Range**
-
-```sql
-DELETE FROM tick_data WHERE datetime > '2024-12-27';
-```
+1. ✅ Load and inspect **tick data** and **news events**
+2. ✅ Clean and normalize all datetime formats
+3. ✅ Enrich news data with macroeconomic context:
+    - Add daily macro summaries
+    - Add labeled macro regimes (recession, expansion, etc.)
+4. ✅ Enable analysis-ready joins: `tick_data` ↔ `news_releases` ↔ `daily_macro_summary`
+5. 🔜 Build intraday analysis and model reactions to macro surprises
 
 ---
 
-## **📆 5. Splitting `datetime` into `date` & `time` Columns**
+## **🧹 Data Cleaning & Preprocessing**
 
-### **📌 5.1 Adding `date` and `time` Columns in `tick_data`**
+### ✅ `news_releases`
+- Removed out-of-scope or NULL dates
+- Shifted timestamps from UTC → GMT+2
+- Formatted to match tick data precision (`%Y-%m-%d %H:%M:%f`)
+- Split datetime into `date` and `time` columns for easier joins
 
-```sql
-ALTER TABLE tick_data ADD COLUMN date TEXT;
-ALTER TABLE tick_data ADD COLUMN time TEXT;
-```
-
-### **📌 5.2 Populating `date` and `time` Columns in `tick_data`**
-
-```sql
-UPDATE tick_data
-SET 
-    date = strftime('%Y-%m-%d', datetime),
-    time = strftime('%H:%M:%f', datetime);
-```
-
-### **📌 5.3 Adding `date` and `time` Columns in `news_releases`**
-
-```sql
-ALTER TABLE news_releases ADD COLUMN date TEXT;
-ALTER TABLE news_releases ADD COLUMN time TEXT;
-```
-
-### **📌 5.4 Populating `date` and `time` Columns in `news_releases`**
-
-```sql
-UPDATE news_releases  
-SET 
-    date = strftime('%Y-%m-%d', datetime),
-    time = strftime('%H:%M:%f', datetime);
-```
+### ✅ `tick_data`
+- Standardized tick timestamps
+- Trimmed to match news event window
+- Added `date` and `time` columns for SQL compatibility
 
 ---
 
-## **📊 Next Steps**
+## **🌐 Macro Data Integration**
 
-- **Perform analysis** on SP500 price movements around major news events.
-- **Join `tick_data` and `news_releases`** to examine price action before and after news releases.
-- **Visualize market reactions** using time-series plots.
-- **Explore predictive modeling** based on news impact trends.
+We fetched the following indicators via FRED and Yahoo Finance:
+
+| Indicator | FRED Code / Source | Frequency |
+|----------|---------------------|-----------|
+| Real GDP Growth | `A191RL1Q225SBEA` | Quarterly |
+| CPI (All Urban) | `CPIAUCSL` | Monthly |
+| Unemployment Rate | `UNRATE` | Monthly |
+| Fed Funds Rate | `FEDFUNDS` | Daily |
+| M2 Money Supply | `M2SL` | Weekly |
+| 10Y & 2Y Treasury Yields | `GS10`, `GS2` | Daily |
+| Consumer Sentiment | `UMCSENT` | Monthly |
+| VIX Index | `^VIX` via yFinance | Daily |
 
 ---
 
-## **🔗 Final Thoughts**
+## **📆 Daily Macro Summary**
 
-This project lays the foundation for **data-driven trading strategies** by combining financial tick data with economic news. With this cleaned and structured dataset, future work can focus on analyzing and modeling **how news affects market volatility and price movements.** 🚀
+We created a `daily_macro_summary` table by:
 
+- **Pivoting macro data** to wide format
+- **Forward-filling** missing days with latest known values
+- **Calculating yield spread** (10Y – 2Y)
+- Ensuring **one row per day**, joinable to `news_releases`
+
+---
+
+## **🧠 Macro Regime Labeling**
+
+We created macro regime labels using logic like:
+
+| Regime Type | Logic |
+|-------------|-------|
+| `growth_regime` | GDP < 0 → recession; GDP > 1.5 → expansion |
+| `policy_regime` | Fed Rate rising → tightening |
+| `yield_curve_regime` | Yield spread < 0 → inverted |
+| `sentiment_regime` | Sentiment < 70 → bearish; > 90 → bullish |
+| `inflation_regime` | CPI YoY > 3% → high inflation |
+
+> All regime labels are forward-filled daily and stored in `market_regime`.
+
+---
+
+## **🔗 Time-Based Joins**
+
+All data is now **synchronized on a daily level**, so we can run clean joins like:
+
+```sql
+SELECT nr.datetime, nr.event, dms."US GDP Growth", r1.regime_label AS growth_regime
+FROM news_releases nr
+LEFT JOIN daily_macro_summary dms ON DATE(nr.date) = dms.date
+LEFT JOIN market_regime r1 ON DATE(nr.date) = r1.date AND r1.regime_type = 'growth_regime'
+WHERE nr.impact = 'High Impact Expected'
