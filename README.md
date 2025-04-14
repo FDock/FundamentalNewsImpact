@@ -1,6 +1,6 @@
-# **📈 Fundamental News Impact on SP500 Price Movements**
+# 📈 Fundamental News Impact on SP500 Price Movements
 
-## **📌 Project Overview**
+## 📌 Project Overview
 
 This project analyzes the relationship between major **economic news releases** and **S&P 500 CFD price movements**. By understanding how macroeconomic context and news affects short-term price behavior, we can study market reactions, design better trading systems, and explore predictive modeling.
 
@@ -8,7 +8,7 @@ It combines **tick-level financial data** with **macroeconomic indicators** to c
 
 ---
 
-## **🔍 Objectives**
+## 🔍 Objectives
 
 - Analyze **SP500 behavior before and after major economic news events**
 - Join **high-frequency price data** with macro context and news metadata
@@ -17,21 +17,20 @@ It combines **tick-level financial data** with **macroeconomic indicators** to c
 
 ---
 
-## **📊 Datasets Used**
+## 📊 Datasets Used
 
 | Dataset | Description |
 |--------|-------------|
 | `tick_data` | Tick-level SP500 CFD prices (bid/ask) |
-| `news_releases` | Economic event data (e.g., NFP, CPI), with timestamps and values |
+| `news_releases_clean` | Filtered economic events: only high-impact USD news |
 | `macro_indicators` | Raw macroeconomic data (GDP, CPI, Unemployment, etc.) |
 | `market_regime` | Labeled daily macro regimes (growth, policy, sentiment, etc.) |
-| `daily_macro_summary` | One-row-per-day macro snapshot (GDP, CPI, yield spread, etc.) |
 | `yield_curve` | 10Y vs. 2Y Treasury yields and spread |
 | `vix_index` | Daily VIX index values from Yahoo Finance |
 
 ---
 
-## **⚙️ Technologies Used**
+## ⚙️ Technologies Used
 
 - **SQLite** for efficient local database storage
 - **Pandas, FRED API, yFinance** for data collection and transformation
@@ -40,84 +39,40 @@ It combines **tick-level financial data** with **macroeconomic indicators** to c
 
 ---
 
-## **🧱 Project Structure & Pipeline**
+## 🧱 Project Structure & Pipeline
 
 1. ✅ Load and inspect **tick data** and **news events**
 2. ✅ Clean and normalize all datetime formats
-3. ✅ Enrich news data with macroeconomic context:
-    - Add daily macro summaries
-    - Add labeled macro regimes (recession, expansion, etc.)
-4. ✅ Enable analysis-ready joins: `tick_data` ↔ `news_releases` ↔ `daily_macro_summary`
-5. 🔜 Build intraday analysis and model reactions to macro surprises
+3. ✅ Filter news releases to retain only **USD high-impact events**
+4. ✅ Remove low-activity trading hours from tick data
+5. ✅ Enrich news data with macroeconomic context and regime labels
+6. 🔜 Build intraday analysis and model reactions to macro surprises
 
 ---
 
-## **🧹 Data Cleaning & Preprocessing**
+## 🧹 Data Cleaning & Preprocessing
 
 ### ✅ `news_releases`
-- Removed out-of-scope or NULL dates
+- Removed out-of-scope or NULL-dated entries
 - Shifted timestamps from UTC → GMT+2
-- Formatted to match tick data precision (`%Y-%m-%d %H:%M:%f`)
+- Standardized datetime format to match tick data
+- Created `news_releases_clean` table with only `USD` & `High Impact Expected` events
 - Split datetime into `date` and `time` columns for easier joins
 
 ### ✅ `tick_data`
-- Standardized tick timestamps
-- Trimmed to match news event window
-- Added `date` and `time` columns for SQL compatibility
+- Reformatted `datetime` to ensure consistency
+- Removed out-of-range data beyond 2024-12-27
+- Trimmed low-activity trading periods (outside 13:00–20:00 GMT)
+- Added `date` and `time` columns for SQL operations
+- Indexed `datetime` for fast joins with event data
 
 ---
 
-## **🌐 Macro Data Integration**
+## 📈 Indexes for Performance
 
-We fetched the following indicators via FRED and Yahoo Finance:
-
-| Indicator | FRED Code / Source | Frequency |
-|----------|---------------------|-----------|
-| Real GDP Growth | `A191RL1Q225SBEA` | Quarterly |
-| CPI (All Urban) | `CPIAUCSL` | Monthly |
-| Unemployment Rate | `UNRATE` | Monthly |
-| Fed Funds Rate | `FEDFUNDS` | Daily |
-| M2 Money Supply | `M2SL` | Weekly |
-| 10Y & 2Y Treasury Yields | `GS10`, `GS2` | Daily |
-| Consumer Sentiment | `UMCSENT` | Monthly |
-| VIX Index | `^VIX` via yFinance | Daily |
-
----
-
-## **📆 Daily Macro Summary**
-
-We created a `daily_macro_summary` table by:
-
-- **Pivoting macro data** to wide format
-- **Forward-filling** missing days with latest known values
-- **Calculating yield spread** (10Y – 2Y)
-- Ensuring **one row per day**, joinable to `news_releases`
-
----
-
-## **🧠 Macro Regime Labeling**
-
-We created macro regime labels using logic like:
-
-| Regime Type | Logic |
-|-------------|-------|
-| `growth_regime` | GDP < 0 → recession; GDP > 1.5 → expansion |
-| `policy_regime` | Fed Rate rising → tightening |
-| `yield_curve_regime` | Yield spread < 0 → inverted |
-| `sentiment_regime` | Sentiment < 70 → bearish; > 90 → bullish |
-| `inflation_regime` | CPI YoY > 3% → high inflation |
-
-> All regime labels are forward-filled daily and stored in `market_regime`.
-
----
-
-## **🔗 Time-Based Joins**
-
-All data is now **synchronized on a daily level**, so we can run clean joins like:
+To optimize analysis speed:
 
 ```sql
-SELECT nr.datetime, nr.event, dms."US GDP Growth", r1.regime_label AS growth_regime
-FROM news_releases nr
-LEFT JOIN daily_macro_summary dms ON DATE(nr.date) = dms.date
-LEFT JOIN market_regime r1 ON DATE(nr.date) = r1.date AND r1.regime_type = 'growth_regime'
-WHERE nr.impact = 'High Impact Expected'
+CREATE INDEX idx_news_datetime ON news_releases_clean(datetime);
+CREATE INDEX idx_tick_datetime ON tick_data(datetime);
+CREATE INDEX idx_news_event ON news_releases_clean(event);
