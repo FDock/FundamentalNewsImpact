@@ -36,7 +36,19 @@ This project analyzes the relationship between major **economic news releases** 
 - **SQL** for cleaning, enrichment, and feature logic
 - **Jupyter Notebook** for visual analysis
 - **Git Bash / Bash** for automating end-to-end pipeline
+---
 
+## 🔐 API Key & Configuration
+
+To access macroeconomic data from the [FRED API](https://fred.stlouisfed.org/), you need to provide your own API key.
+
+### Step 1: Create a `.env` File in the Project Root
+
+Create a file named `.env` (no extension) at the root of your project and add your FRED API key like this:
+
+```env
+FRED_API_KEY=your_actual_key_here
+```
 ---
 
 ## 🧱 Project Pipeline
@@ -108,6 +120,7 @@ sp500_news_reaction/
 │   ├── 04_create_indexes.sql
 │   └── 05_analysis_views.sql
 ├── database.db
+├── .env
 ├── requirements.txt
 ├── .gitignore
 └── README.md
