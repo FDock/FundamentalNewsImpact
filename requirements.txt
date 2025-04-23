@@ -1,0 +1,6 @@
+pandas
+numpy
+matplotlib
+sqlite3
+jupyter
+python-dotenv

@@ -1,0 +1,19 @@
+# Ignore database files
+*.db
+
+# Ignore data files (CSV, ZIP)
+*.csv
+*.zip
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore environment variables (if any)
+.env
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Secrets
+.env
