@@ -2,51 +2,57 @@
 
 ## 📌 Project Overview
 
-This project analyzes the relationship between major **economic news releases** and **S&P 500 CFD price movements**. By understanding how macroeconomic context and news affects short-term price behavior, we can study market reactions, design better trading systems, and explore predictive modeling.
-
-It combines **tick-level financial data** with **macroeconomic indicators** to create a rich, structured dataset ready for analysis, visualization, and machine learning.
+This project analyzes the relationship between major **economic news releases** and **S&P 500 CFD price movements**. By combining **tick-level financial data** with **macroeconomic indicators**, we build an automated data pipeline that enables high-resolution event-based analysis — suitable for quant research, trading signal development, or exploratory data science.
 
 ---
 
 ## 🔍 Objectives
 
-- Analyze **SP500 behavior before and after major economic news events**
-- Join **high-frequency price data** with macro context and news metadata
-- Label and track **macro regimes** (e.g., recession, high inflation)
-- Build a foundation for **strategy development and modeling**
+- Study **price behavior before and after high-impact macroeconomic news**
+- Join **tick-level SP500 data** with structured macro context
+- Label and track **macro regimes** (e.g., expansion, recession, policy tightening)
+- Create an analysis-ready dataset for modeling and backtesting
+- Build a reproducible pipeline with SQL, Python, and Bash
 
 ---
 
 ## 📊 Datasets Used
 
-| Dataset | Description |
-|--------|-------------|
-| `tick_data` | Tick-level SP500 CFD prices (bid/ask) |
-| `news_releases_clean` | Filtered economic events: only high-impact USD news |
-| `macro_indicators` | Raw macroeconomic data (GDP, CPI, Unemployment, etc.) |
-| `market_regime` | Labeled daily macro regimes (growth, policy, sentiment, etc.) |
-| `yield_curve` | 10Y vs. 2Y Treasury yields and spread |
-| `vix_index` | Daily VIX index values from Yahoo Finance |
+| Dataset               | Description                                                  |
+|----------------------|--------------------------------------------------------------|
+| `tick_data`          | Tick-level S&P 500 CFD prices (bid/ask)                      |
+| `news_releases_clean`| Filtered macro news (USD-only, high-impact events)           |
+| `macro_indicators`   | Raw economic indicators (GDP, CPI, Unemployment, etc.)       |
+| `market_regime`      | Macro regime labels (growth, policy, sentiment, yield)       |
+| `yield_curve`        | 10Y vs. 2Y Treasury yields and spread                        |
+| `vix_index`          | Daily VIX values from Yahoo Finance                          |
 
 ---
 
 ## ⚙️ Technologies Used
 
-- **SQLite** for efficient local database storage
-- **Pandas, FRED API, yFinance** for data collection and transformation
-- **Jupyter Notebook** for analysis, querying, and exploratory work
-- **SQL** for joins, filtering, and preprocessing
+- **SQLite** for local database storage
+- **Pandas, FRED API, yFinance** for Python-based data transformation
+- **SQL** for cleaning, enrichment, and feature logic
+- **Jupyter Notebook** for visual analysis
+- **Git Bash / Bash** for automating end-to-end pipeline
 
 ---
 
-## 🧱 Project Structure & Pipeline
+## 🧱 Project Pipeline
 
-1. ✅ Load and inspect **tick data** and **news events**
-2. ✅ Clean and normalize all datetime formats
-3. ✅ Filter news releases to retain only **USD high-impact events**
-4. ✅ Remove low-activity trading hours from tick data
-5. ✅ Enrich news data with macroeconomic context and regime labels
-6. 🔜 Build intraday analysis and model reactions to macro surprises
+```bash
+bash scripts/run_pipeline.sh
+```
+
+### 🔄 What It Does:
+- Creates all SQLite tables and views
+- Loads tick/news data from local CSVs
+- Downloads macro data via FRED and Yahoo
+- Populates context tables like `market_regime`
+- Cleans & filters the data
+- Extracts tick windows around macro events (±1m, 5m, 15m)
+- Exports the final structured dataset to CSV
 
 ---
 
@@ -55,24 +61,83 @@ It combines **tick-level financial data** with **macroeconomic indicators** to c
 ### ✅ `news_releases`
 - Removed out-of-scope or NULL-dated entries
 - Shifted timestamps from UTC → GMT+2
-- Standardized datetime format to match tick data
-- Created `news_releases_clean` table with only `USD` & `High Impact Expected` events
-- Split datetime into `date` and `time` columns for easier joins
+- Filtered to `USD` & `High Impact Expected` only
+- Added `date` and `time` for easier joins
 
 ### ✅ `tick_data`
-- Reformatted `datetime` to ensure consistency
-- Removed out-of-range data beyond 2024-12-27
-- Trimmed low-activity trading periods (outside 13:00–20:00 GMT)
-- Added `date` and `time` columns for SQL operations
-- Indexed `datetime` for fast joins with event data
+- Normalized `datetime` format
+- Removed non-trading hours (13:00–20:00 GMT)
+- Trimmed to match news dataset date range
+- Derived `date` and `time` columns
+- Indexed for performance
 
 ---
 
 ## 📈 Indexes for Performance
 
-To optimize analysis speed:
-
 ```sql
 CREATE INDEX idx_news_datetime ON news_releases_clean(datetime);
 CREATE INDEX idx_tick_datetime ON tick_data(datetime);
 CREATE INDEX idx_news_event ON news_releases_clean(event);
+```
+
+---
+
+## 📂 Folder Structure
+
+```
+sp500_news_reaction/
+├── analysis/
+│   └── tick_reaction_analysis.ipynb
+├── data/
+│   ├── raw/
+│   ├── tick_windows/
+│   └── final_analysis_dataset.csv
+├── scripts/
+│   ├── 01_load_and_prepare_data.py
+│   ├── 02_extract_tick_data_by_event.py
+│   ├── 03_export_analysis_dataset.py
+│   ├── utils/
+│   │   ├── paths.py
+│   │   └── config.py
+│   └── run_pipeline.sh
+├── sql/
+│   ├── 01_create_schema.sql
+│   ├── 02_clean_news_releases.sql
+│   ├── 03_clean_tick_data.sql
+│   ├── 04_create_indexes.sql
+│   └── 05_analysis_views.sql
+├── database.db
+├── requirements.txt
+├── .gitignore
+└── README.md
+```
+
+---
+
+## 🚀 Next Steps
+
+- Visualize pre/post news price moves by category
+- Engineer features: delta sizes, volatility, sentiment alignment
+- Build classification models for market direction
+- Backtest rule-based strategies using event features
+- Explore clustering by reaction type
+
+---
+
+## 🧠 Author
+
+**FDock**  
+
+
+---
+
+## 🛡️ Suggested .gitignore
+
+```gitignore
+*.db
+__pycache__/
+.ipynb_checkpoints/
+.env
+*.csv
+```
